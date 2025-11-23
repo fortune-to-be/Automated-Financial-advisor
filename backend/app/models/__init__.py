@@ -145,6 +145,19 @@ class Rule(db.Model):
     
     def __repr__(self):
         return f'<Rule {self.name}>'
+    
+    def apply_to_transaction(self, transaction_dict):
+        """
+        Apply this rule to a transaction dictionary.
+        Returns (modified_tx, explanation) tuple.
+        """
+        from app.services.rule_engine import ConditionEvaluator, ActionExecutor
+        
+        if not ConditionEvaluator.evaluate(self.condition, transaction_dict):
+            return transaction_dict, None
+        
+        modified_tx, explanation = ActionExecutor.execute(self.action, transaction_dict)
+        return modified_tx, explanation
 
 
 class AuditLog(db.Model):

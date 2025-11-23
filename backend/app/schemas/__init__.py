@@ -129,3 +129,27 @@ class AuditLogSchema(Schema):
     ip_address = fields.Str(allow_none=True)
     user_agent = fields.Str(allow_none=True)
     created_at = fields.DateTime()
+
+
+class RuleSchema(Schema):
+    """Rule schema - list view"""
+    id = fields.Int(dump_only=True)
+    name = fields.Str(required=True)
+    description = fields.Str(allow_none=True)
+    priority = fields.Int(default=0)
+    is_active = fields.Bool(default=True)
+    created_at = fields.DateTime(dump_only=True)
+    updated_at = fields.DateTime(dump_only=True)
+
+
+class RuleDetailSchema(Schema):
+    """Rule schema - detailed view"""
+    id = fields.Int(dump_only=True)
+    name = fields.Str(required=True)
+    description = fields.Str(allow_none=True)
+    condition = fields.Dict(required=True)
+    action = fields.Dict(required=True)
+    priority = fields.Int(default=0)
+    is_active = fields.Bool(default=True)
+    created_at = fields.DateTime(dump_only=True)
+    updated_at = fields.DateTime(dump_only=True)

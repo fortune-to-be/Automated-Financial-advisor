@@ -5,6 +5,7 @@ from flask_migrate import Migrate
 from app.config import get_config
 from app.database import db
 from app.routes import auth_bp
+from app.routes.admin import admin_bp
 
 migrate = Migrate()
 jwt = JWTManager()
@@ -26,6 +27,7 @@ def create_app(config=None):
     
     # Register blueprints
     app.register_blueprint(auth_bp)
+    app.register_blueprint(admin_bp)
     
     # Register error handlers
     @app.errorhandler(404)

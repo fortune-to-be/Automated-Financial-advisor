@@ -3,6 +3,7 @@ import json
 from app import create_app
 from app.config import TestingConfig
 from app.database import db
+from app.models import User, Category
 
 @pytest.fixture
 def app():
@@ -24,6 +25,36 @@ def client(app):
 def runner(app):
     """CLI runner"""
     return app.test_cli_runner()
+
+@pytest.fixture
+def admin_user(client):
+    """Create admin user for testing"""
+    response = client.post('/api/auth/register', json={
+        'email': 'admin@test.com',
+        'username': 'admin_user',
+        'password': 'password123'
+    })
+    
+    user_id = response.json['user']['id']
+    
+    # Promote to admin
+    with client.application.app_context():
+        user = User.query.get(user_id)
+        user.role = 'admin'
+        db.session.commit()
+    
+    return response.json['tokens']['access_token']
+
+@pytest.fixture
+def normal_user(client):
+    """Create normal user for testing"""
+    response = client.post('/api/auth/register', json={
+        'email': 'user@test.com',
+        'username': 'normal_user',
+        'password': 'password123'
+    })
+    
+    return response.json['tokens']['access_token']
 
 class TestHealth:
     """Health check tests"""
@@ -166,4 +197,238 @@ class TestAuthentication:
         """Test getting profile without authentication"""
         response = client.get('/api/auth/profile')
         assert response.status_code == 401
+
+
+class TestAdminRules:
+    """Admin rule management tests"""
+    
+    def test_list_rules_admin(self, client, admin_user):
+        """Test listing rules as admin"""
+        response = client.get(
+            '/api/admin/rules',
+            headers={'Authorization': f'Bearer {admin_user}'}
+        )
+        assert response.status_code == 200
+        assert 'data' in response.json
+    
+    def test_list_rules_non_admin(self, client, normal_user):
+        """Test listing rules as non-admin"""
+        response = client.get(
+            '/api/admin/rules',
+            headers={'Authorization': f'Bearer {normal_user}'}
+        )
+        assert response.status_code == 403
+    
+    def test_create_rule_admin(self, client, admin_user):
+        """Test creating a rule as admin"""
+        rule_data = {
+            'name': 'Test Rule',
+            'description': 'Test description',
+            'condition': {
+                'operator': 'merchant_contains',
+                'value': 'grocery'
+            },
+            'action': {
+                'type': 'set_category',
+                'category_id': 1
+            },
+            'priority': 5,
+            'is_active': True
+        }
+        
+        response = client.post(
+            '/api/admin/rules',
+            json=rule_data,
+            headers={'Authorization': f'Bearer {admin_user}'}
+        )
+        assert response.status_code == 201
+        assert response.json['name'] == 'Test Rule'
+        assert response.json['priority'] == 5
+    
+    def test_create_rule_invalid_condition(self, client, admin_user):
+        """Test creating rule with invalid condition"""
+        rule_data = {
+            'name': 'Invalid Rule',
+            'condition': {
+                'operator': 'unknown_operator',
+                'value': 'test'
+            },
+            'action': {
+                'type': 'set_category',
+                'category_id': 1
+            }
+        }
+        
+        response = client.post(
+            '/api/admin/rules',
+            json=rule_data,
+            headers={'Authorization': f'Bearer {admin_user}'}
+        )
+        assert response.status_code == 400
+        assert 'Unknown operator' in response.json.get('error', '')
+    
+    def test_create_rule_non_admin(self, client, normal_user):
+        """Test creating rule as non-admin"""
+        rule_data = {
+            'name': 'Test Rule',
+            'condition': {'operator': 'amount_gt', 'value': 100},
+            'action': {'type': 'set_category', 'category_id': 1}
+        }
+        
+        response = client.post(
+            '/api/admin/rules',
+            json=rule_data,
+            headers={'Authorization': f'Bearer {normal_user}'}
+        )
+        assert response.status_code == 403
+    
+    def test_validate_rule(self, client, admin_user):
+        """Test rule validation endpoint"""
+        rule_data = {
+            'name': 'Grocery Rule',
+            'condition': {
+                'operator': 'merchant_contains',
+                'value': 'grocery'
+            },
+            'action': {
+                'type': 'set_category',
+                'category_id': 1
+            }
+        }
+        
+        response = client.post(
+            '/api/admin/rules/validate',
+            json=rule_data,
+            headers={'Authorization': f'Bearer {admin_user}'}
+        )
+        assert response.status_code == 200
+        assert response.json['valid'] is True
+    
+    def test_validate_rule_invalid_regex(self, client, admin_user):
+        """Test validation with invalid regex"""
+        rule_data = {
+            'name': 'Bad Regex Rule',
+            'condition': {
+                'operator': 'merchant_regex',
+                'value': '[invalid('
+            },
+            'action': {
+                'type': 'set_category',
+                'category_id': 1
+            }
+        }
+        
+        response = client.post(
+            '/api/admin/rules/validate',
+            json=rule_data,
+            headers={'Authorization': f'Bearer {admin_user}'}
+        )
+        assert response.status_code == 400
+        assert response.json['valid'] is False
+    
+    def test_update_rule(self, client, admin_user):
+        """Test updating a rule"""
+        # Create rule first
+        rule_data = {
+            'name': 'Original Rule',
+            'condition': {
+                'operator': 'merchant_contains',
+                'value': 'grocery'
+            },
+            'action': {
+                'type': 'set_category',
+                'category_id': 1
+            },
+            'priority': 0
+        }
+        
+        create_response = client.post(
+            '/api/admin/rules',
+            json=rule_data,
+            headers={'Authorization': f'Bearer {admin_user}'}
+        )
+        rule_id = create_response.json['id']
+        
+        # Update rule
+        update_data = {
+            'name': 'Updated Rule',
+            'priority': 10
+        }
+        
+        response = client.put(
+            f'/api/admin/rules/{rule_id}',
+            json=update_data,
+            headers={'Authorization': f'Bearer {admin_user}'}
+        )
+        assert response.status_code == 200
+        assert response.json['name'] == 'Updated Rule'
+        assert response.json['priority'] == 10
+    
+    def test_delete_rule(self, client, admin_user):
+        """Test deleting a rule"""
+        # Create rule first
+        rule_data = {
+            'name': 'Rule to Delete',
+            'condition': {
+                'operator': 'amount_gt',
+                'value': 100
+            },
+            'action': {
+                'type': 'set_tags',
+                'tags': ['large_expense']
+            }
+        }
+        
+        create_response = client.post(
+            '/api/admin/rules',
+            json=rule_data,
+            headers={'Authorization': f'Bearer {admin_user}'}
+        )
+        rule_id = create_response.json['id']
+        
+        # Delete rule
+        response = client.delete(
+            f'/api/admin/rules/{rule_id}',
+            headers={'Authorization': f'Bearer {admin_user}'}
+        )
+        assert response.status_code == 200
+        
+        # Verify deletion
+        get_response = client.get(
+            f'/api/admin/rules/{rule_id}',
+            headers={'Authorization': f'Bearer {admin_user}'}
+        )
+        assert get_response.status_code == 404
+    
+    def test_toggle_rule_active(self, client, admin_user):
+        """Test toggling rule active status"""
+        # Create rule
+        rule_data = {
+            'name': 'Toggle Rule',
+            'condition': {'operator': 'amount_gt', 'value': 50},
+            'action': {'type': 'set_tags', 'tags': ['test']},
+            'is_active': True
+        }
+        
+        create_response = client.post(
+            '/api/admin/rules',
+            json=rule_data,
+            headers={'Authorization': f'Bearer {admin_user}'}
+        )
+        rule_id = create_response.json['id']
+        
+        # Toggle
+        response = client.post(
+            f'/api/admin/rules/{rule_id}/toggle',
+            headers={'Authorization': f'Bearer {admin_user}'}
+        )
+        assert response.status_code == 200
+        assert response.json['is_active'] is False
+        
+        # Toggle again
+        response = client.post(
+            f'/api/admin/rules/{rule_id}/toggle',
+            headers={'Authorization': f'Bearer {admin_user}'}
+        )
+        assert response.json['is_active'] is True
 
