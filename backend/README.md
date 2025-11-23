@@ -9,7 +9,9 @@ Flask-based REST API for the Automated Financial Advisor platform.
 - Request/response validation with marshmallow schemas
 - Password hashing with bcrypt
 - Database migrations with Alembic
-- Comprehensive test suite
+- **Rule Engine**: JSON DSL for automating transaction processing with 10+ operators
+- Admin endpoints for rule management (CRUD, validation, testing)
+- Comprehensive test suite (45+ tests)
 - Seeder script for initial data
 
 ## Project Structure
@@ -141,6 +143,51 @@ pytest test_app.py::TestAuthentication::test_register_user
 - `POST /api/auth/refresh` - Refresh access token
 - `GET /api/auth/profile` - Get current user profile (requires auth)
 - `PUT /api/auth/profile` - Update user profile (requires auth)
+
+### Admin Rule Management (Requires Admin Role)
+
+- `GET /api/admin/rules` - List all rules with pagination
+- `GET /api/admin/rules/<id>` - Get specific rule
+- `POST /api/admin/rules` - Create new rule
+- `PUT /api/admin/rules/<id>` - Update rule
+- `DELETE /api/admin/rules/<id>` - Delete rule
+- `POST /api/admin/rules/<id>/toggle` - Toggle rule active status
+- `POST /api/admin/rules/validate` - Validate rule JSON and test with sample transaction
+
+## Rule Engine
+
+The Rule Engine enables powerful automation for transaction processing using a JSON DSL.
+
+### Key Features
+
+- **10+ Condition Operators**: Match transactions by merchant, amount, date, category, and more
+- **5 Action Types**: Categorize, tag, recommend changes, or stop processing
+- **Priority-based Execution**: Control evaluation order with priority levels
+- **JSON DSL**: Declarative, easy-to-understand rule definitions
+- **Validation**: Comprehensive error checking with descriptive messages
+- **Caching**: In-memory rule cache for performance
+- **Admin Interface**: Full CRUD operations with role-based access control
+
+### Quick Example
+
+```json
+{
+    "name": "Auto-Categorize Groceries",
+    "description": "Automatically categorize grocery store transactions",
+    "condition": {
+        "operator": "merchant_regex",
+        "value": "(whole foods|trader joe|kroger)"
+    },
+    "action": {
+        "type": "set_category",
+        "category_id": 12
+    },
+    "priority": 10,
+    "is_active": true
+}
+```
+
+For complete documentation, see [RULE_ENGINE.md](./RULE_ENGINE.md)
 
 ## Authentication
 
