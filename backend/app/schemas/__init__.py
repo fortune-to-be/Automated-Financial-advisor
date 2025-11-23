@@ -153,3 +153,52 @@ class RuleDetailSchema(Schema):
     is_active = fields.Bool(default=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
+
+
+class BudgetRecommendationSchema(Schema):
+    """Schema for budget recommendation responses"""
+    user_id = fields.Int()
+    recommended_budgets = fields.List(fields.Dict())
+    monthly_income = fields.Decimal(places=2)
+    debt_ratio = fields.Float()
+    rule_trace = fields.List(fields.Str())
+    generated_at = fields.DateTime()
+
+
+class GoalScheduleSchema(Schema):
+    """Schema for computed goal schedule"""
+    goal_id = fields.Int()
+    name = fields.Str()
+    target_amount = fields.Decimal(places=2)
+    current_amount = fields.Decimal(places=2)
+    remaining_amount = fields.Decimal(places=2)
+    months_remaining = fields.Int()
+    monthly_required = fields.Decimal(places=2)
+    is_feasible = fields.Bool()
+    feasibility_reason = fields.Str()
+    monthly_schedule = fields.List(fields.Dict())
+    alternative_plans = fields.List(fields.Dict())
+    rule_trace = fields.List(fields.Str())
+
+
+class CashflowForecastSchema(Schema):
+    """Schema for cashflow forecast responses"""
+    user_id = fields.Int()
+    forecast_months = fields.Int()
+    starting_balance = fields.Decimal(places=2)
+    monthly_forecasts = fields.List(fields.Dict())
+    negative_balance_months = fields.List(fields.Int())
+    warnings = fields.List(fields.Str())
+    rule_trace = fields.List(fields.Str())
+
+
+class PortfolioAllocationSchema(Schema):
+    """Schema for portfolio allocation responses"""
+    risk_profile = fields.Str()
+    age = fields.Int()
+    horizon = fields.Int()
+    allocation = fields.Dict()
+    explanation = fields.Str()
+    expected_return = fields.Float()
+    volatility = fields.Float()
+    rule_trace = fields.List(fields.Str())
