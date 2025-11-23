@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: advisor_backend
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - DATABASE_URL=postgresql://advisor:advisor_pass@db:5432/advisor_db
+      - SECRET_KEY=dev-secret-key-change-in-production
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - db
+    command: python app.py
+    networks:
+      - advisor_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: advisor_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - advisor_network
+
+  db:
+    image: postgres:14-alpine
+    container_name: advisor_db
+    environment:
+      - POSTGRES_USER=advisor
+      - POSTGRES_PASSWORD=advisor_pass
+      - POSTGRES_DB=advisor_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - advisor_network
+
+volumes:
+  postgres_data:
+
+networks:
+  advisor_network:
+    driver: bridge
