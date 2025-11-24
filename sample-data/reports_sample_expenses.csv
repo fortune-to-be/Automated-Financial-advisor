@@ -1,0 +1,4 @@
+id,account_id,category,type,amount,description,transaction_date
+1,1,Groceries,expense,45.67,Whole Foods,2025-11-01T10:00:00
+2,1,Utilities,expense,120.00,Electric bill,2025-11-03T12:00:00
+3,1,Salary,income,3000.00,November salary,2025-11-01T00:00:00
