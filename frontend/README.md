@@ -1,16 +1,15 @@
-# Frontend
+# Frontend (React + TypeScript)
 
-React-based frontend for the Automated Financial Advisor platform.
+This is a minimal Vite + React + TypeScript scaffold for the Automated Financial Advisor frontend.
 
-## Development
+Quick start:
 
-```bash
+```powershell
+cd frontend
 npm install
-npm start
+npm run dev
 ```
 
-## Build
-
-```bash
-npm run build
-```
+Notes:
+- Uses Tailwind for styling.
+- `src/services/api.ts` provides an `api` axios instance and keeps the access token in memory. Refresh endpoint `/api/auth/refresh` is expected to use an httpOnly cookie for the refresh token.
