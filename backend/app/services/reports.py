@@ -79,15 +79,30 @@ class ReportsService:
             by_category.setdefault(cat_name, Decimal('0.00'))
             by_category[cat_name] += amt
 
-        # budgets: sum active budgets per category overlapping period
+        # budgets: sum active budgets per category overlapping the requested period
         budgets = {}
-        bq = Budget.query.filter_by(user_id=user_id, is_active=True)
-        if start_date:
-            bq = bq.filter(Budget.start_date <= end_date if end_date else Budget.start_date <= datetime.utcnow())
-        for b in bq.all():
-            cat = b.category.name if b.category else 'Uncategorized'
-            budgets.setdefault(cat, Decimal('0.00'))
-            budgets[cat] += Decimal(b.limit_amount)
+        b_list = Budget.query.filter_by(user_id=user_id, is_active=True).all()
+        for b in b_list:
+            # determine overlap: if budget has start/end date, check intersection with requested window
+            if start_date and b.end_date and b.end_date < start_date:
+                continue
+            if end_date and b.start_date and b.start_date > end_date:
+                continue
+
+            # resolve category name safely (Budget has category_id)
+            cat_name = 'Uncategorized'
+            if getattr(b, 'category_id', None):
+                from app.models import Category as _Category
+                c = _Category.query.get(b.category_id)
+                if c:
+                    cat_name = c.name
+
+            budgets.setdefault(cat_name, Decimal('0.00'))
+            try:
+                budgets[cat_name] += Decimal(b.limit_amount)
+            except Exception:
+                # fallback if limit_amount is already numeric
+                budgets[cat_name] += Decimal(str(getattr(b, 'limit_amount', 0)))
 
         # Format results
         by_category_out = {k: float(v) for k, v in by_category.items()}
