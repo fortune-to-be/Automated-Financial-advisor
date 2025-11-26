@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from app.database import db
 from sqlalchemy.dialects.postgresql import JSON
 
@@ -14,8 +14,8 @@ class User(db.Model):
     last_name = db.Column(db.String(255))
     role = db.Column(db.String(50), default='user')  # admin, user
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Relationships
     accounts = db.relationship('Account', backref='user', lazy=True, cascade='all, delete-orphan')
@@ -40,8 +40,8 @@ class Account(db.Model):
     balance = db.Column(db.Numeric(15, 2), default=0.0)
     currency = db.Column(db.String(3), default='USD')
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Relationships
     transactions = db.relationship('Transaction', backref='account', lazy=True, cascade='all, delete-orphan')
@@ -59,7 +59,7 @@ class Category(db.Model):
     description = db.Column(db.Text)
     color = db.Column(db.String(7), default='#000000')  # Hex color
     icon = db.Column(db.String(50))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Relationships
     transactions = db.relationship('Transaction', backref='category', lazy=True)
@@ -79,10 +79,10 @@ class Transaction(db.Model):
     amount = db.Column(db.Numeric(15, 2), nullable=False)
     type = db.Column(db.String(50), nullable=False)  # income, expense, transfer
     description = db.Column(db.Text)
-    transaction_date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    transaction_date = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     tags = db.Column(JSON)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     
     def __repr__(self):
         return f'<Transaction {self.type} ${self.amount}>'
@@ -100,8 +100,8 @@ class Budget(db.Model):
     start_date = db.Column(db.DateTime, nullable=False)
     end_date = db.Column(db.DateTime)
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     
     def __repr__(self):
         return f'<Budget {self.limit_amount}>'
@@ -121,8 +121,8 @@ class Goal(db.Model):
     category = db.Column(db.String(100))  # savings, debt_payoff, purchase, education, etc.
     priority = db.Column(db.String(50), default='medium')  # low, medium, high
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     
     def __repr__(self):
         return f'<Goal {self.name}>'
@@ -140,8 +140,8 @@ class Rule(db.Model):
     action = db.Column(JSON, nullable=False)  # e.g., {"type": "categorize", "category_id": 5}
     priority = db.Column(db.Integer, default=0)  # Higher number = higher priority
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     
     def __repr__(self):
         return f'<Rule {self.name}>'
@@ -173,7 +173,7 @@ class AuditLog(db.Model):
     new_values = db.Column(JSON)
     ip_address = db.Column(db.String(45))  # IPv4 or IPv6
     user_agent = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     
     def __repr__(self):
         return f'<AuditLog {self.action}>'

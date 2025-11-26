@@ -7,6 +7,10 @@ from app.database import db
 from app.routes import auth_bp
 from app.routes.admin import admin_bp
 from app.routes.planner import planner_bp
+from app.routes.transactions import transactions_bp
+from app.routes.reports import reports_bp
+from app.routes.budgets import budgets_bp
+from app.routes.goals import goals_bp
 
 migrate = Migrate()
 jwt = JWTManager()
@@ -30,6 +34,10 @@ def create_app(config=None):
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(planner_bp)
+    app.register_blueprint(transactions_bp)
+    app.register_blueprint(reports_bp)
+    app.register_blueprint(budgets_bp)
+    app.register_blueprint(goals_bp)
     
     # Register error handlers
     @app.errorhandler(404)

@@ -1,20 +1,21 @@
 # User Manual
 
-Quickstart
+This manual covers the basic usage of the Automated Financial Advisor application for end users and administrators.
 
-1. Start backend and frontend (see `docs/deployment.md` for production).
-2. Register a user via POST `/api/auth/register` or use the web UI.
-3. Login (`/api/auth/login`) to obtain `access_token` and include `Authorization: Bearer <token>` for protected routes.
+Getting started (user)
+- Register an account via the frontend UI or `POST /api/auth/register`.
+- Log in to receive a JWT access token used for subsequent API requests.
 
-Common API flows
+Transactions
+- Import transactions using the CSV import: preview then commit. The CSV requires fields: `transaction_date`, `description`, `amount`, `account_id`, `type` (one of `income|expense|transfer`).
+- You can review the preview rows and adjust mappings before committing.
 
-- CSV Import: `/api/transactions/import/preview` and `/api/transactions/import/commit` accept multipart `file` field with CSV. Required CSV headers: `transaction_date,description,amount,account_id,type`.
-- Admin Rules: `/api/admin/rules` endpoints let admins add/validate rules that auto-categorize transactions.
-- Planner: `/api/planner/recommend-budgets` returns budget recommendations based on recent transactions.
+Budgets & Goals
+- Create budgets to track spending limits per category. Budgets have `start_date` and `end_date` and are evaluated against imported transactions.
+- Add financial goals and use the planner to compute feasible schedules.
 
-Support
+Admin features
+- Admin users can create and manage rules that auto-categorize transactions. Use `POST /api/admin/rules/validate` to validate a rule before saving.
 
-If you encounter errors:
-- Check server logs for tracebacks.
-- Confirm `DATABASE_URL` points to an initialized database and migrations have been applied.
-- Use `backend/scripts/seed_direct.py` to create a sample admin user and category for demos.
+Developer notes
+- API endpoints and example payloads are documented in the README and quickstart.

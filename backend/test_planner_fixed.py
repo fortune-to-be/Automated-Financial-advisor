@@ -5,7 +5,7 @@ by ensuring proper imports and removing an accidental `self`
 parameter (the tests are plain functions, not methods).
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app import create_app, db
 from app.config import TestingConfig
 from app.models import User, Account, Category, Transaction
@@ -42,7 +42,7 @@ def test_cashflow_forecast_negative_projection_FIXED():
     user_id, accounts, categories = _setup_demo_data(app)
 
     with app.app_context():
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # High expenses, low income
         for i in range(3):
@@ -78,7 +78,7 @@ def test_audit_log_budget_recommendations_FIXED():
     user_id, accounts, categories = _setup_demo_data(app)
 
     with app.app_context():
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         for i in range(3):
             tx_income = Transaction(

@@ -8,7 +8,7 @@ Implements deterministic algorithms for:
 - Portfolio allocation heuristics
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Dict, List, Tuple, Any, Optional
 from app.database import db
@@ -57,7 +57,7 @@ class BudgetRecommender:
             }
         """
         # Calculate date range
-        end_date = datetime.utcnow()
+        end_date = datetime.now(timezone.utc)
         start_date = end_date - timedelta(days=30 * months)
         
         # Get all transactions
@@ -147,7 +147,7 @@ class BudgetRecommender:
             'monthly_income': float(monthly_income),
             'debt_ratio': debt_ratio,
             'rule_trace': rule_trace,
-            'generated_at': datetime.utcnow()
+            'generated_at': datetime.now(timezone.utc)
         }
 
 
@@ -199,13 +199,17 @@ class GoalScheduler:
                 'rule_trace': [str]
             }
         """
-        goal = Goal.query.get(goal_id)
+        goal = db.session.get(Goal, goal_id)
         if not goal:
             raise PlannerError(f"Goal {goal_id} not found")
         
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         target_date = goal.target_date
-        
+
+        # Normalize target_date to timezone-aware UTC if stored as naive
+        if target_date.tzinfo is None:
+            target_date = target_date.replace(tzinfo=timezone.utc)
+
         if target_date <= now:
             raise PlannerError(f"Goal deadline {target_date} is in the past")
         
@@ -363,7 +367,7 @@ class CashflowForecaster:
         starting_balance = sum(Decimal(str(acc.balance)) for acc in accounts)
         
         # Get historical data (last 90 days)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         start_date = now - timedelta(days=90)
         
         transactions = Transaction.query.filter(
@@ -607,11 +611,25 @@ def estimate_category_type(category_name: str) -> str:
 
 def save_plan_to_audit_log(user_id: int, plan_type: str, plan_data: Dict[str, Any]) -> None:
     """Save generated plan to audit log for future reference"""
+    # Normalize datetimes to ISO strings to ensure JSON serializability
+    def _normalize(value):
+        from datetime import datetime, date
+
+        if isinstance(value, (datetime, date)):
+            return value.isoformat()
+        if isinstance(value, dict):
+            return {k: _normalize(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [_normalize(v) for v in value]
+        return value
+
+    safe_plan = _normalize(plan_data)
+
     audit_log = AuditLog(
         user_id=user_id,
         action=f'plan_generated',
         resource_type=f'Planner{plan_type}',
-        new_values=plan_data
+        new_values=safe_plan
     )
     db.session.add(audit_log)
     db.session.commit()

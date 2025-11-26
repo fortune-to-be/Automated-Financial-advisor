@@ -38,8 +38,6 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL')
-    if not SQLALCHEMY_DATABASE_URI:
-        raise ValueError("DATABASE_URL environment variable is not set")
 
 # Select configuration based on environment
 config = {
@@ -53,4 +51,11 @@ def get_config(env=None):
     """Get configuration object based on environment"""
     if env is None:
         env = os.getenv('FLASK_ENV', 'development')
+    # When selecting production, ensure DATABASE_URL is configured
+    if env == 'production':
+        prod = config.get('production')
+        db_uri = getattr(prod, 'SQLALCHEMY_DATABASE_URI', None)
+        if not db_uri:
+            raise ValueError("DATABASE_URL environment variable is not set for production environment")
+
     return config.get(env, config['default'])

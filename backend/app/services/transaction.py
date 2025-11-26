@@ -2,7 +2,7 @@
 
 import csv
 import io
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Any, Tuple
 from decimal import Decimal
 
@@ -180,7 +180,7 @@ class TransactionService:
         rule_trace_str = [f"Rule '{rt.get('name')}' matched - {rt.get('explanation')}" for rt in rule_trace]
 
         transaction.category_id = modified_tx.get("category_id")
-        transaction.updated_at = datetime.utcnow()
+        transaction.updated_at = datetime.now(timezone.utc)
 
         audit_log = AuditLog(
             user_id=user_id,
@@ -360,7 +360,7 @@ class TransactionImporter:
 
     def preview_csv(self, user_id: int, csv_content: str, max_rows: int = 10) -> Dict[str, Any]:
         """Preview CSV rows with the rule engine applied (does not persist)."""
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if not user:
             raise TransactionError(f"User {user_id} not found")
 
@@ -458,7 +458,7 @@ class TransactionImporter:
 
     def commit_import(self, user_id: int, csv_content: str) -> Dict[str, Any]:
         """Persist transactions from CSV. Returns summary with errors."""
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if not user:
             raise TransactionError(f"User {user_id} not found")
 

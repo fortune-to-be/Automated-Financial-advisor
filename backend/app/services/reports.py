@@ -93,7 +93,7 @@ class ReportsService:
             cat_name = 'Uncategorized'
             if getattr(b, 'category_id', None):
                 from app.models import Category as _Category
-                c = _Category.query.get(b.category_id)
+                c = db.session.get(_Category, b.category_id)
                 if c:
                     cat_name = c.name
 

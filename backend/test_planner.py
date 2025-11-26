@@ -6,7 +6,7 @@ and portfolio allocation with comprehensive corner case coverage.
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from app import create_app, db
 from app.models import User, Account, Category, Transaction, Goal, AuditLog
@@ -80,7 +80,7 @@ class TestBudgetRecommender:
         """Test budget recommendation with normal spending patterns"""
         with app.app_context():
             # Add transactions from last 3 months
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             
             # 3 months of salary
             for i in range(3):
@@ -125,7 +125,7 @@ class TestBudgetRecommender:
             test_accounts[0].balance = -5000  # $5000 debt
             db.session.commit()
             
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             
             # Add income transactions
             for i in range(3):
@@ -151,7 +151,7 @@ class TestBudgetRecommender:
     def test_recommend_budgets_zero_income(self, app, test_user, test_categories, test_accounts):
         """Test budget recommendation with no income (corner case)"""
         with app.app_context():
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             
             # Only expenses, no income
             for i in range(3):
@@ -179,7 +179,7 @@ class TestBudgetRecommender:
     def test_recommend_budgets_multiple_months(self, app, test_user, test_categories, test_accounts):
         """Test budget recommendation analyzes specified number of months"""
         with app.app_context():
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             
             # Add transactions from 6 months ago
             for i in range(6):
@@ -212,7 +212,7 @@ class TestGoalScheduler:
         """Test feasible goal schedule"""
         with app.app_context():
             # Create goal
-            target_date = datetime.utcnow() + timedelta(days=180)  # 6 months
+            target_date = datetime.now(timezone.utc) + timedelta(days=180)  # 6 months
             goal = Goal(
                 user_id=test_user.id,
                 name='Vacation Fund',
@@ -226,7 +226,7 @@ class TestGoalScheduler:
             db.session.commit()
             
             # Add income/expense transactions (good savings capacity)
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             for i in range(3):
                 tx_income = Transaction(
                     user_id=test_user.id,
@@ -263,7 +263,7 @@ class TestGoalScheduler:
     def test_compute_goal_schedule_already_achieved(self, app, test_user, test_categories):
         """Test goal schedule when target is already achieved"""
         with app.app_context():
-            target_date = datetime.utcnow() + timedelta(days=180)
+            target_date = datetime.now(timezone.utc) + timedelta(days=180)
             goal = Goal(
                 user_id=test_user.id,
                 name='Achieved Goal',
@@ -285,7 +285,7 @@ class TestGoalScheduler:
     def test_compute_goal_schedule_short_deadline(self, app, test_user, test_categories, test_accounts):
         """Test goal schedule with short deadline (corner case)"""
         with app.app_context():
-            target_date = datetime.utcnow() + timedelta(days=15)  # 15 days
+            target_date = datetime.now(timezone.utc) + timedelta(days=15)  # 15 days
             goal = Goal(
                 user_id=test_user.id,
                 name='Urgent Goal',
@@ -298,7 +298,7 @@ class TestGoalScheduler:
             db.session.add(goal)
             db.session.commit()
             
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             tx = Transaction(
                 user_id=test_user.id,
                 account_id=test_accounts[0].id,
@@ -325,7 +325,7 @@ class TestGoalScheduler:
     def test_compute_goal_schedule_past_deadline(self, app, test_user, test_categories):
         """Test goal schedule with past deadline"""
         with app.app_context():
-            target_date = datetime.utcnow() - timedelta(days=1)  # Yesterday
+            target_date = datetime.now(timezone.utc) - timedelta(days=1)  # Yesterday
             goal = Goal(
                 user_id=test_user.id,
                 name='Past Goal',
@@ -348,7 +348,7 @@ class TestCashflowForecaster:
     def test_cashflow_forecast_normal(self, app, test_user, test_categories, test_accounts):
         """Test cashflow forecast with normal patterns"""
         with app.app_context():
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             
             # Add 3 months of transactions
             for i in range(3):
@@ -383,7 +383,7 @@ class TestCashflowForecaster:
     def test_cashflow_forecast_negative_projection(self, app, test_user, test_categories, test_accounts):
         """Test cashflow forecast with negative balance projection"""
         with app.app_context():
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             
             # High expenses, low income
             for i in range(3):
@@ -424,7 +424,7 @@ class TestCashflowForecaster:
     def test_cashflow_forecast_zero_income(self, app, test_user, test_categories, test_accounts):
         """Test cashflow forecast with only expenses (corner case)"""
         with app.app_context():
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             
             # Only expenses
             for i in range(3):
@@ -448,7 +448,7 @@ class TestCashflowForecaster:
     def test_cashflow_forecast_extended_horizon(self, app, test_user, test_categories, test_accounts):
         """Test cashflow forecast with extended horizon"""
         with app.app_context():
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             
             # Add base transactions
             for i in range(3):
@@ -574,7 +574,7 @@ class TestAuditLogging:
     def test_audit_log_budget_recommendations(self, app, test_user, test_categories, test_accounts):
         """Test that budget recommendations are logged"""
         with app.app_context():
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             
             for i in range(3):
                 # Add income
@@ -616,7 +616,7 @@ class TestPlannerIntegration:
     def test_all_planners_accessible(self, app, test_user, test_categories, test_accounts):
         """Test that all planner functions are accessible with proper setup"""
         with app.app_context():
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             
             # Setup data
             for i in range(3):

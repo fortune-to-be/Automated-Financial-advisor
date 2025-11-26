@@ -6,6 +6,7 @@ and portfolio allocation.
 """
 
 from flask import Blueprint, request, jsonify
+from app.database import db
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.services.planner import (
     BudgetRecommender, GoalScheduler, CashflowForecaster, PortfolioAllocator, PlannerError, save_plan_to_audit_log
@@ -67,7 +68,7 @@ def compute_goal_schedule(goal_id):
         
         # Verify goal ownership
         from app.models import Goal
-        goal = Goal.query.get(goal_id)
+        goal = db.session.get(Goal, goal_id)
         if not goal or goal.user_id != user_id:
             return jsonify({'error': 'Goal not found or not owned by user'}), 404
         

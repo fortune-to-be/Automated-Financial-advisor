@@ -1,5 +1,5 @@
 import io
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app import create_app, db
 from app.config import TestingConfig
 from app.models import User, Account, Category, Transaction, Budget
@@ -25,7 +25,7 @@ def _setup_user_with_transactions(app):
         db.session.add_all([cat_g, cat_u])
         db.session.commit()
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         tx1 = Transaction(user_id=user.id, account_id=acc.id, amount=45.67, type='expense', category_id=cat_g.id, transaction_date=now - timedelta(days=2))
         tx2 = Transaction(user_id=user.id, account_id=acc.id, amount=120.0, type='expense', category_id=cat_u.id, transaction_date=now - timedelta(days=1))
         tx3 = Transaction(user_id=user.id, account_id=acc.id, amount=3000.0, type='income', category_id=None, transaction_date=now)

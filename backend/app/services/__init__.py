@@ -4,7 +4,15 @@ from passlib.context import CryptContext
 from app.database import db
 from app.models import User
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+"""Service utilities and AuthService.
+
+Notes:
+- Use a PBKDF2-based scheme as the default to avoid platform-dependent
+    bcrypt backend installation issues in test environments. Keep bcrypt
+    in the list as a fallback if available.
+"""
+
+pwd_context = CryptContext(schemes=["pbkdf2_sha256", "bcrypt"], deprecated="auto")
 
 class AuthService:
     """Authentication service"""
@@ -81,7 +89,7 @@ class UserService:
     @staticmethod
     def get_user_by_id(user_id: int):
         """Get user by ID"""
-        return User.query.get(user_id)
+        return db.session.get(User, user_id)
     
     @staticmethod
     def get_user_by_email(email: str):
@@ -96,7 +104,7 @@ class UserService:
     @staticmethod
     def update_user(user_id: int, **kwargs):
         """Update user information"""
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if not user:
             raise ValueError('User not found')
         

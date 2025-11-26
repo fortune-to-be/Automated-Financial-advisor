@@ -1,37 +1,50 @@
 version: '3.8'
+
 services:
-  db:
-    image: postgres:15-alpine
-    restart: always
+  postgres:
+    image: postgres:15
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-advisor}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-advisorpass}
-      POSTGRES_DB: ${POSTGRES_DB:-advisor}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-advisor_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-advisor_prod}
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - afa_net
 
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: ./
+      dockerfile: backend/Dockerfile
     depends_on:
-      - db
+      - postgres
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-advisor}:${POSTGRES_PASSWORD:-advisorpass}@db:5432/${POSTGRES_DB:-advisor}
+      # Use DATABASE_URL for SQLAlchemy / Flask
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       FLASK_ENV: production
       SECRET_KEY: ${SECRET_KEY}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      # Additional env vars can be provided via .env file
     ports:
-      - "8000:8000"
-    restart: always
+      - "5000:5000"
+    restart: unless-stopped
+    networks:
+      - afa_net
 
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: ./
+      dockerfile: frontend/Dockerfile
     ports:
       - "80:80"
-    restart: always
+    restart: unless-stopped
+    networks:
+      - afa_net
 
 volumes:
-  db_data:
+  postgres_data:
+
+networks:
+  afa_net:
+    driver: bridge

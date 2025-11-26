@@ -19,7 +19,7 @@ def admin_required(fn):
     @wraps(fn)
     def decorator(*args, **kwargs):
         user_id = get_jwt_identity()
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         
         if not user or user.role != 'admin':
             return jsonify({'error': 'Admin access required'}), 403
@@ -60,7 +60,7 @@ def list_rules():
 @admin_required
 def get_rule(rule_id):
     """Get a specific rule"""
-    rule = Rule.query.get(rule_id)
+    rule = db.session.get(Rule, rule_id)
     
     if not rule:
         return jsonify({'error': 'Rule not found'}), 404
@@ -121,7 +121,7 @@ def create_rule():
 @admin_required
 def update_rule(rule_id):
     """Update a rule"""
-    rule = Rule.query.get(rule_id)
+    rule = db.session.get(Rule, rule_id)
     
     if not rule:
         return jsonify({'error': 'Rule not found'}), 404
@@ -169,7 +169,7 @@ def update_rule(rule_id):
 @admin_required
 def delete_rule(rule_id):
     """Delete a rule"""
-    rule = Rule.query.get(rule_id)
+    rule = db.session.get(Rule, rule_id)
     
     if not rule:
         return jsonify({'error': 'Rule not found'}), 404
@@ -253,7 +253,7 @@ def validate_rule():
 @admin_required
 def toggle_rule_active(rule_id):
     """Toggle rule active status"""
-    rule = Rule.query.get(rule_id)
+    rule = db.session.get(Rule, rule_id)
     
     if not rule:
         return jsonify({'error': 'Rule not found'}), 404

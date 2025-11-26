@@ -37,7 +37,7 @@ class TokenResponseSchema(Schema):
     """Token response schema"""
     access_token = fields.Str()
     refresh_token = fields.Str()
-    token_type = fields.Str(default='Bearer')
+    token_type = fields.Str(dump_default='Bearer')
     expires_in = fields.Int()
 
 
@@ -47,8 +47,8 @@ class AccountSchema(Schema):
     name = fields.Str(required=True)
     account_type = fields.Str(required=True, validate=validate.OneOf(['checking', 'savings', 'credit_card', 'investment']))
     balance = fields.Decimal(places=2, dump_only=True)
-    currency = fields.Str(default='USD')
-    is_active = fields.Bool(default=True)
+    currency = fields.Str(dump_default='USD')
+    is_active = fields.Bool(dump_default=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
 
@@ -56,9 +56,9 @@ class AccountSchema(Schema):
 class CategorySchema(Schema):
     """Category schema"""
     id = fields.Int(dump_only=True)
-    name = fields.Str(required=True, unique=True)
+    name = fields.Str(required=True, metadata={"unique": True})
     description = fields.Str(allow_none=True)
-    color = fields.Str(default='#000000')
+    color = fields.Str(dump_default='#000000')
     icon = fields.Str(allow_none=True)
     created_at = fields.DateTime(dump_only=True)
 
@@ -82,10 +82,10 @@ class BudgetSchema(Schema):
     id = fields.Int(dump_only=True)
     category_id = fields.Int(allow_none=True)
     limit_amount = fields.Decimal(places=2, required=True)
-    period = fields.Str(default='monthly', validate=validate.OneOf(['monthly', 'yearly', 'custom']))
+    period = fields.Str(dump_default='monthly', validate=validate.OneOf(['monthly', 'yearly', 'custom']))
     start_date = fields.DateTime(required=True)
     end_date = fields.DateTime(allow_none=True)
-    is_active = fields.Bool(default=True)
+    is_active = fields.Bool(dump_default=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
 
@@ -99,8 +99,8 @@ class GoalSchema(Schema):
     current_amount = fields.Decimal(places=2, dump_only=True)
     target_date = fields.DateTime(required=True)
     category = fields.Str(allow_none=True)
-    priority = fields.Str(default='medium', validate=validate.OneOf(['low', 'medium', 'high']))
-    is_active = fields.Bool(default=True)
+    priority = fields.Str(dump_default='medium', validate=validate.OneOf(['low', 'medium', 'high']))
+    is_active = fields.Bool(dump_default=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
 
@@ -112,8 +112,8 @@ class RuleSchema(Schema):
     description = fields.Str(allow_none=True)
     condition = fields.Dict(required=True)
     action = fields.Dict(required=True)
-    priority = fields.Int(default=0)
-    is_active = fields.Bool(default=True)
+    priority = fields.Int(dump_default=0)
+    is_active = fields.Bool(dump_default=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
 
@@ -136,8 +136,8 @@ class RuleSchema(Schema):
     id = fields.Int(dump_only=True)
     name = fields.Str(required=True)
     description = fields.Str(allow_none=True)
-    priority = fields.Int(default=0)
-    is_active = fields.Bool(default=True)
+    priority = fields.Int(dump_default=0)
+    is_active = fields.Bool(dump_default=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
 
@@ -149,8 +149,8 @@ class RuleDetailSchema(Schema):
     description = fields.Str(allow_none=True)
     condition = fields.Dict(required=True)
     action = fields.Dict(required=True)
-    priority = fields.Int(default=0)
-    is_active = fields.Bool(default=True)
+    priority = fields.Int(dump_default=0)
+    is_active = fields.Bool(dump_default=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
 
@@ -202,3 +202,76 @@ class PortfolioAllocationSchema(Schema):
     expected_return = fields.Float()
     volatility = fields.Float()
     rule_trace = fields.List(fields.Str())
+
+
+class TransactionCreateSchema(Schema):
+    """Schema for creating a transaction"""
+    account_id = fields.Int(required=True)
+    amount = fields.Decimal(places=2, required=True)
+    type = fields.Str(required=True, validate=validate.OneOf(['income', 'expense', 'transfer']))
+    description = fields.Str(required=True)
+    transaction_date = fields.DateTime(allow_none=True)
+    category_id = fields.Int(allow_none=True)
+    tags = fields.List(fields.Str(), allow_none=True)
+
+
+class TransactionUpdateSchema(Schema):
+    """Schema for updating a transaction"""
+    description = fields.Str(allow_none=True)
+    category_id = fields.Int(allow_none=True)
+    tags = fields.List(fields.Str(), allow_none=True)
+    transaction_date = fields.DateTime(allow_none=True)
+
+
+class TransactionResponseSchema(Schema):
+    """Schema for transaction responses"""
+    id = fields.Int()
+    user_id = fields.Int()
+    account_id = fields.Int()
+    category_id = fields.Int(allow_none=True)
+    amount = fields.Decimal(places=2)
+    type = fields.Str()
+    description = fields.Str()
+    transaction_date = fields.DateTime()
+    tags = fields.List(fields.Str())
+    applied_rules = fields.List(fields.Int())
+    rule_trace = fields.List(fields.Str())
+    created_at = fields.DateTime()
+    updated_at = fields.DateTime()
+
+
+class TransactionListSchema(Schema):
+    """Schema for transaction list with pagination"""
+    data = fields.List(fields.Nested(TransactionResponseSchema))
+    total = fields.Int()
+    pages = fields.Int()
+    current_page = fields.Int()
+    per_page = fields.Int()
+
+
+class CSVImportPreviewSchema(Schema):
+    """Schema for CSV import preview"""
+    row_number = fields.Int()
+    account_id = fields.Int()
+    amount = fields.Decimal(places=2)
+    type = fields.Str()
+    description = fields.Str()
+    transaction_date = fields.Str()
+    category_id = fields.Int(allow_none=True)
+    applied_rules = fields.List(fields.Int())
+    rule_trace = fields.List(fields.Str())
+
+
+class CSVImportPreviewResponseSchema(Schema):
+    """Schema for CSV import preview response"""
+    preview_rows = fields.List(fields.Nested(CSVImportPreviewSchema))
+    total_rows_preview = fields.Int()
+    warnings = fields.List(fields.Str())
+
+
+class CSVImportCommitResponseSchema(Schema):
+    """Schema for CSV import commit response"""
+    created_count = fields.Int()
+    total_errors = fields.Int()
+    errors = fields.List(fields.Str())
+

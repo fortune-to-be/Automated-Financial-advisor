@@ -1,0 +1,3 @@
+user_id,account_id,amount,type,description,transaction_date
+1,1,23.45,expense,"Trader Joe's",2025-11-01T10:00:00Z
+1,1,150.00,expense,Rent,2025-11-05T10:00:00Z

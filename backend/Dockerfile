@@ -1,32 +1,46 @@
 FROM python:3.11-slim AS builder
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
 # Install build deps
-RUN apt-get update && apt-get install -y build-essential gcc libpq-dev --no-install-recommends \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends gcc libpq-dev build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-COPY backend/requirements.txt ./
-RUN python -m pip install --upgrade pip setuptools wheel
-RUN pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
+# Copy requirement file and install into a virtual env
+COPY backend/requirements.txt ./requirements.txt
+RUN python -m venv /opt/venv \
+    && /opt/venv/bin/pip install --upgrade pip setuptools wheel \
+    && /opt/venv/bin/pip install -r requirements.txt
 
 FROM python:3.11-slim
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/opt/venv/bin:$PATH"
+
 WORKDIR /app
 
-# runtime deps
-RUN apt-get update && apt-get install -y libpq5 --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
+# Copy virtualenv from builder
+COPY --from=builder /opt/venv /opt/venv
 
-COPY --from=builder /wheels /wheels
-RUN pip install --no-cache /wheels/*
+# Copy application code
+COPY backend/ ./backend/
+COPY backend/manage.py ./manage.py
 
-COPY backend/ .
+WORKDIR /app/backend
 
-ENV FLASK_APP=app.py
-ENV PYTHONUNBUFFERED=1
+# Expose port
+EXPOSE 5000
 
-EXPOSE 8000
+# Default env vars (can be overridden by docker-compose / env-file)
+ENV FLASK_ENV=production
+ENV FLASK_APP=app
 
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "app:app"]
+# Entrypoint: run migrations then start gunicorn using the app factory
+CMD ["sh", "-c", "flask db upgrade --directory migrations || true && gunicorn \"app:create_app()\" -b 0.0.0.0:5000 --workers 3"]
 FROM python:3.9-slim
 
 WORKDIR /app
