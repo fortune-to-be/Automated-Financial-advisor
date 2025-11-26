@@ -1,0 +1,37 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-advisor}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-advisorpass}
+      POSTGRES_DB: ${POSTGRES_DB:-advisor}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-advisor}:${POSTGRES_PASSWORD:-advisorpass}@db:5432/${POSTGRES_DB:-advisor}
+      FLASK_ENV: production
+      SECRET_KEY: ${SECRET_KEY}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+    ports:
+      - "8000:8000"
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    restart: always
+
+volumes:
+  db_data:
